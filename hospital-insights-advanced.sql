@@ -64,3 +64,28 @@ SELECT
     2
     ) AS  MoM_Growth_Percentage
 FROM Monthly;
+
+
+-- Length of Stay (LOS) Outlier Detection
+-- Identifies patients whose length of stay exceeds 2 standard deviations above
+-- the hospital average, flagging abnormally long stays for clinical and financial review.
+-- SQL Concepts: CTE, STDEV(), AVG(), CROSS JOIN, Z-Score Calculation, NULLIF()
+
+WITH Stats AS (
+  SELECT
+    AVG(CAST(DURATION_OF_STAY AS FLOAT))
+      AS Avg_LOS,
+    STDEV(DURATION_OF_STAY) AS SD_LOS
+  FROM v_HospitalAdmission
+)
+SELECT  
+  MRD_No, AGE, GENDER,
+  DURATION_OF_STAY,
+  ROUND(s.Avg_LOS, 1) AS Avg_LOS,
+  ROUND((DURATION_OF_STAY - s.Avg_LOS)
+    / NULLIF(s.SD_LOS,0), 2) AS Z_Score
+FROM v_HospitalAdmission
+CROSS JOIN Stats s
+WHERE DURATION_OF_STAY >
+  s.Avg_LOS + (2 * s.SD_LOS)
+ORDER BY DURATION_OF_STAY DESC;
