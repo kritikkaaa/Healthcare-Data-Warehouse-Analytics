@@ -89,3 +89,33 @@ CROSS JOIN Stats s
 WHERE DURATION_OF_STAY >
   s.Avg_LOS + (2 * s.SD_LOS)
 ORDER BY DURATION_OF_STAY DESC;
+
+
+
+-- Mortality Rate by Age Group and Admission Type
+-- Analyzes mortality percentages across different age categories and admission channels
+-- to identify high-risk patient segments and support clinical outcome monitoring.
+-- SQL Concepts: CASE WHEN, Conditional Aggregation, GROUP BY, COUNT(), SUM(), ROUND(), ORDER BY
+
+SELECT
+  CASE
+    WHEN AGE < 16 THEN 'Paediatric'
+    WHEN AGE < 65 THEN 'Adult'
+    ELSE 'Senior Citizen'
+  END AS Age_Group,
+  TYPE_OF_ADMISSION_emergency_opd,
+  COUNT(*) AS Total,
+  SUM(CASE WHEN OUTCOME='EXPIRY'
+    THEN 1 ELSE 0 END) AS Deaths,
+  ROUND(100.0*
+    SUM(CASE WHEN OUTCOME='EXPIRY'
+      THEN 1 ELSE 0 END)
+    / COUNT(*), 2) AS Mortality_Pct
+FROM v_HospitalAdmission
+GROUP BY
+  CASE WHEN AGE < 16 THEN 'Paediatric'
+       WHEN AGE < 65 THEN 'Adult'
+       ELSE 'Senior Citizen' END,
+  TYPE_OF_ADMISSION_emergency_opd
+ORDER BY Mortality_Pct DESC;
+
